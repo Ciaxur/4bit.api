@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"4bit.api/v0/server/route/ping"
+	"4bit.api/v0/server/route"
 )
 
 type ServerOpts struct {
@@ -44,7 +44,7 @@ func Run(opts *ServerOpts) error {
 	}
 
 	// Add server root endpoints.
-	ping.CreateRoute()
+	http.Handle("/", route.InitRootRoute())
 
 	log.Printf("Listening on %s:%d.\n", opts.HostEndpoint, opts.PortEndpoint)
 	if err := server.ListenAndServeTLS(opts.ServerCertificate, opts.ServerKey); err != nil {

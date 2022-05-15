@@ -2,7 +2,10 @@ module 4bit.api/v0
 
 go 1.17
 
-require github.com/spf13/cobra v1.4.0
+require (
+	github.com/gorilla/mux v1.8.0
+	github.com/spf13/cobra v1.4.0
+)
 
 require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect

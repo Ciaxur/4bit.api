@@ -64,11 +64,13 @@ func main() {
 		Timeout:   5 * time.Second,
 	}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s/ping", srvEndpoint), bytes.NewBufferString(""))
+	pingEndpoint := fmt.Sprintf("https://%s/ping", srvEndpoint)
+	req, err := http.NewRequest(http.MethodGet, pingEndpoint, bytes.NewBufferString(""))
 	if err != nil {
 		log.Fatal("failed to construct request")
 	}
 
+	log.Println("Invoking a request to endpoint:", pingEndpoint)
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal("failed to invoke GET request with server")
