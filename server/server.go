@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"time"
 
+	"4bit.api/v0/server/middleware"
 	"4bit.api/v0/server/route"
+	"github.com/gorilla/mux"
 )
 
 type ServerOpts struct {
@@ -43,8 +45,14 @@ func Run(opts *ServerOpts) error {
 		},
 	}
 
+	router := mux.NewRouter()
+
+	// Add middleware.
+	router.Use(middleware.BasicLogger)
+
 	// Add server root endpoints.
-	http.Handle("/", route.InitRootRoute())
+	route.InitRootRoute(router)
+	http.Handle("/", router)
 
 	log.Printf("Listening on %s:%d.\n", opts.HostEndpoint, opts.PortEndpoint)
 	if err := server.ListenAndServeTLS(opts.ServerCertificate, opts.ServerKey); err != nil {
