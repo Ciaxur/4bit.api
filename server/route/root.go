@@ -11,5 +11,7 @@ func InitRootRoute(r *mux.Router) {
 	pingSubrouter := r.PathPrefix("/ping").Subrouter()
 	ping.CreateRoute(pingSubrouter)
 
-	return r
+	// Telegram endpoint.
+	telegramMessageSubrouter := r.PathPrefix("/telegram").Subrouter()
+	telegram.CreateRoute(telegramMessageSubrouter)
 }
