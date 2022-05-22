@@ -1,0 +1,16 @@
+---
+version: "3.9"
+services:
+  4bit_api:
+    image: golang:1.18-alpine
+    container_name: 4bit_api_server
+    environment:
+    # The basename for the CA's and server's key pair.
+      CA_CRT_NAME: 4bitCA
+      SERVER_CRT_NAME: localhost
+    volumes:
+      - .:/app
+      - ./certs:/certs
+    ports:
+      - 3000:3000
+    entrypoint: /app/scripts/entrypoint.sh

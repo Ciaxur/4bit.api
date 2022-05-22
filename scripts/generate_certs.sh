@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# This script is intended to generate a CA cert along with a server cert and
+# client cert.
 
 # Verify that certstrap is installed and readily available to be invoked.
 which certstrap 2>&1 1>/dev/null
@@ -12,7 +14,7 @@ fi
 # Store the relative path to the script directory in order to create & move the
 # generated files into the project root.
 SCRIPTS_DIR=`dirname $0`
-CERTS_DIR=$SCRIPTS_DIR/../TEST
+CERTS_DIR=$SCRIPTS_DIR/../certs
 
 # Parse positional arguments.
 POSITIONAL=()
