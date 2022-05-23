@@ -24,7 +24,9 @@ func handleServerCmd(cmd *cobra.Command, args []string) error {
 		HostEndpoint:      cmd.PersistentFlags().Lookup("host").Value.String(),
 		PortEndpoint:      uint16(port),
 	}
-	server.Run(opts)
+	if err := server.Run(opts); err != nil {
+		return fmt.Errorf("failed server command: %v", err)
+	}
 	return nil
 }
 

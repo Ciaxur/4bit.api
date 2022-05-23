@@ -20,6 +20,7 @@ SERVER_CRT_NAME=${SERVER_CRT_NAME%.*}
 
 # Install required alpine packages.
 apk add git
+git config --global --add safe.directory /app
 
 # First, we would build the server from a clean slate.
 echo "Clearing out previous build(s)."
