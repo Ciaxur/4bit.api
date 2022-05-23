@@ -16,9 +16,11 @@ func handleServerCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := &server.ServerOpts{
+		ServerName:        cmd.PersistentFlags().Lookup("name").Value.String(),
 		ServerCertificate: cmd.PersistentFlags().Lookup("srvCrt").Value.String(),
 		ServerKey:         cmd.PersistentFlags().Lookup("srvKey").Value.String(),
 		CACertificate:     cmd.PersistentFlags().Lookup("caCrt").Value.String(),
+		CACrl:             cmd.PersistentFlags().Lookup("caCrl").Value.String(),
 		HostEndpoint:      cmd.PersistentFlags().Lookup("host").Value.String(),
 		PortEndpoint:      uint16(port),
 	}
@@ -39,6 +41,9 @@ func NewServerCommand() *cobra.Command {
 	srvCmd.MarkPersistentFlagRequired("srvKey")
 	srvCmd.PersistentFlags().String("caCrt", "", "Path to the CA Certificate.")
 	srvCmd.MarkPersistentFlagRequired("caCrt")
+	srvCmd.PersistentFlags().String("caCrl", "", "Path to the CA Certificate Revocation List (CRL).")
+	srvCmd.MarkPersistentFlagRequired("caCrl")
+	srvCmd.PersistentFlags().String("name", "localhost", "Server's name'.")
 	srvCmd.PersistentFlags().String("host", "localhost", "Server hostname to serve on.")
 	srvCmd.PersistentFlags().Uint("port", 3000, "Server port to serve on.")
 

@@ -73,6 +73,8 @@ echo "Generating certificates and keys..."
 certstrap init --common-name $CA_NAME
 
 # Generate the server and client key pairs (certs & keys).
+# NOTE: If your server has multiple domains and/or ips (use --ip), append the
+# various entires separated by commas.
 certstrap request-cert --domain $SERVER_DOMAIN --key-bits 4096
 certstrap request-cert --domain $CLIENT_DOMAIN --key-bits 4096
 

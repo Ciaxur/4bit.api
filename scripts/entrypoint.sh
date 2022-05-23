@@ -71,4 +71,8 @@ fi
 # Start the server!
 BIN_VERSION=$(git rev-parse HEAD | head -c 8)
 BIN_NAME="4bit-api-$BIN_VERSION"
-$BUILD_DIR/$BIN_NAME server --caCrt $CERTS_DIR/$CA_CRT_NAME.crt --srvCrt $CERTS_DIR/$SERVER_CRT_NAME.crt --srvKey $CERTS_DIR/$SERVER_CRT_NAME.key
+$BUILD_DIR/$BIN_NAME server \
+  --caCrt $CERTS_DIR/$CA_CRT_NAME.crt \
+  --caCrl $CERTS_DIR/$CA_CRT_NAME.crl \
+  --srvCrt $CERTS_DIR/$SERVER_CRT_NAME.crt \
+  --srvKey $CERTS_DIR/$SERVER_CRT_NAME.key
