@@ -23,8 +23,8 @@ func main() {
 	caCrt := flag.String("ca_crt", "", "Path to the CA's certificate.")
 	host := flag.String("host", "localhost", "Server's hostname endpoint.")
 	port := flag.Uint("port", 3000, "Server's port number endpoint.")
-	srvEndpoint := fmt.Sprintf("%s:%d", *host, *port)
 	flag.Parse()
+	srvEndpoint := fmt.Sprintf("%s:%d", *host, *port)
 
 	// Check required flags where passed in.
 	if *clientCrt == "" || *clientKey == "" || *caCrt == "" {
