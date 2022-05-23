@@ -13,6 +13,7 @@ import (
 	"4bit.api/v0/internal/utils"
 	"4bit.api/v0/server/middleware"
 	"4bit.api/v0/server/route"
+	fileio "4bit.api/v0/utils/fileIO"
 	"github.com/gorilla/mux"
 )
 
@@ -33,6 +34,14 @@ func Run(opts *ServerOpts) error {
 	caCrtContent, err := ioutil.ReadFile(opts.CACertificate)
 	if err != nil {
 		return fmt.Errorf("failed to read the content of CA %s", opts.CACertificate)
+	}
+
+	// Check if the server's certificate & key exists.
+	if !fileio.FileExists(opts.ServerCertificate) {
+		return fmt.Errorf("server certificate '%s' does not exist", opts.ServerCertificate)
+	}
+	if !fileio.FileExists(opts.ServerKey) {
+		return fmt.Errorf("server key '%s' does not exist", opts.ServerKey)
 	}
 
 	// Parse the certificate(s) from PEM bytes.

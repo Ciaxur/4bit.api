@@ -75,4 +75,5 @@ $BUILD_DIR/$BIN_NAME server \
   --caCrt $CERTS_DIR/$CA_CRT_NAME.crt \
   --caCrl $CERTS_DIR/$CA_CRT_NAME.crl \
   --srvCrt $CERTS_DIR/$SERVER_CRT_NAME.crt \
-  --srvKey $CERTS_DIR/$SERVER_CRT_NAME.key
+  --srvKey $CERTS_DIR/$SERVER_CRT_NAME.key \
+  --host 0.0.0.0
