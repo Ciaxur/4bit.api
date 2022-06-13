@@ -100,7 +100,7 @@ func Run(opts *ServerOpts) error {
 				if !checked {
 					return fmt.Errorf("failed to match a certificate from the cert pool with the CRL: %v", crlCheckErr)
 				}
-				log.Printf("CRL verified with certificate issuer: %s\n", cert.Issuer)
+				log.Printf("CRL verified peer[%s] with certificate issuer: %s\n", cert.Subject, cert.Issuer)
 
 				// Check if the peer's certificate is among the revoked ones registered
 				// within the CRL.
