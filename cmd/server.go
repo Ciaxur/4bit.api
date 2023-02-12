@@ -2,13 +2,40 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 
+	"4bit.api/v0/database"
 	"4bit.api/v0/server"
+	"github.com/go-pg/pg/v10"
 	"github.com/spf13/cobra"
 )
 
+// Database flags
+var (
+	postgres_host     *string
+	postgres_port     *uint16
+	postgres_database *string
+	postgres_username *string
+	postgres_password *string
+)
+
 func handleServerCmd(cmd *cobra.Command, args []string) error {
+	// Establish a connection with the postgres database.
+	if _, err := database.NewConnection(&pg.Options{
+		Addr:     fmt.Sprintf("%s:%d", *postgres_host, *postgres_port),
+		Database: *postgres_database,
+		User:     *postgres_username,
+		Password: *postgres_password,
+	}); err != nil {
+		return fmt.Errorf(
+			"failed to establish a new connection with %s:%d",
+			*postgres_host,
+			*postgres_port,
+		)
+	}
+	log.Printf("Postgres connection successful")
+
 	// Extract & construct server options.
 	port, err := strconv.ParseUint(cmd.PersistentFlags().Lookup("port").Value.String(), 10, 16)
 	if err != nil {
@@ -37,6 +64,7 @@ func NewServerCommand() *cobra.Command {
 		RunE:  handleServerCmd,
 	}
 
+	// Server hosting flags.
 	srvCmd.PersistentFlags().String("srvCrt", "", "Path to server's certificate.")
 	srvCmd.MarkPersistentFlagRequired("srvCrt")
 	srvCmd.PersistentFlags().String("srvKey", "", "Path to server's key.")
@@ -48,6 +76,13 @@ func NewServerCommand() *cobra.Command {
 	srvCmd.PersistentFlags().String("name", "localhost", "Server's name'.")
 	srvCmd.PersistentFlags().String("host", "localhost", "Server hostname to serve on.")
 	srvCmd.PersistentFlags().Uint("port", 3000, "Server port to serve on.")
+
+	// Database flags.
+	postgres_host = srvCmd.PersistentFlags().StringP("postgres_host", "", "localhost", "Postgres database hostname.")
+	postgres_port = srvCmd.PersistentFlags().Uint16P("postgres_port", "", 5432, "Postgres database port.")
+	postgres_database = srvCmd.PersistentFlags().StringP("postgres_database", "", "4bit", "Postgres database to use.")
+	postgres_username = srvCmd.PersistentFlags().StringP("postgres_username", "", "admin", "Postgres username.")
+	postgres_password = srvCmd.PersistentFlags().StringP("postgres_password", "", "example", "Postgres password.")
 
 	return srvCmd
 }
