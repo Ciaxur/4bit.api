@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"4bit.api/v0/database"
 	"github.com/gorilla/mux"
@@ -72,6 +73,8 @@ func nodePostHandler(w http.ResponseWriter, r *http.Request) {
 	node := database.Node{
 		CertificateFingerprint: fingerprint,
 	}
+	node.Timestamp = time.Now().UTC()
+
 	if _, err := db.Model(&node).Insert(); err != nil {
 		log.Printf("Failed to create node entry for fingerprint '%s': %v", fingerprint, err)
 		http.Error(w, "failed to create node entry", http.StatusInternalServerError)

@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"4bit.api/v0/database"
 	"4bit.api/v0/server/route/node/interfaces"
@@ -135,6 +136,7 @@ func nodeStatePostHandler(w http.ResponseWriter, r *http.Request) {
 			BarometerState: *stateRequest.BarometerState,
 			NodeId:         node.Id,
 		}
+		nodeBarStateEntry.Timestamp = time.Now().UTC()
 
 		// Create new entry.
 		if _, err := db.Model(&nodeBarStateEntry).Insert(); err != nil {
@@ -155,6 +157,7 @@ func nodeStatePostHandler(w http.ResponseWriter, r *http.Request) {
 			PowerState: *stateRequest.Power,
 			NodeId:     node.Id,
 		}
+		nodePowerStateEntry.Timestamp = time.Now().UTC()
 
 		// Create new entry.
 		if _, err := db.Model(&nodePowerStateEntry).Insert(); err != nil {
