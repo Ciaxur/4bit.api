@@ -27,6 +27,7 @@ func Init() error {
 		return fmt.Errorf("failed to create a new bot api: %v", err)
 	}
 	log.Printf("Authorized on account %s", BOT.Self.UserName)
+	go StartBot()
 
 	return nil
 }
