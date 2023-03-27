@@ -65,7 +65,7 @@ func Run(opts *ServerOpts) error {
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", opts.HostEndpoint, opts.PortEndpoint),
 		ReadTimeout:  5 * time.Minute,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 5 * time.Minute,
 		TLSConfig: &tls.Config{
 			ServerName: opts.ServerName,
 			ClientCAs:  caCertPool,
@@ -141,7 +141,9 @@ func Run(opts *ServerOpts) error {
 	router.Use(middleware.BasicLogger)
 
 	// Add server root endpoints.
-	route.InitRootRoute(router)
+	if err := route.InitRootRoute(router); err != nil {
+		return fmt.Errorf("failed to create root server routes: %v", err)
+	}
 	http.Handle("/", router)
 
 	log.Printf("Listening on %s:%d.\n", opts.HostEndpoint, opts.PortEndpoint)

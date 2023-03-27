@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/go-pg/pg/v10"
 )
@@ -21,8 +22,14 @@ func NewConnection(options *pg.Options) (*pg.DB, error) {
 	DbInstance = pg.Connect(options)
 
 	// Create schemas.
+	log.Println("Attempting to create Node schema")
 	if err := CreateNodeSchema(DbInstance); err != nil {
 		return nil, fmt.Errorf("failed to create node schema: %v", err)
+	}
+
+	log.Println("Attempting to create Camera schema")
+	if err := CreateCameraSchema(DbInstance); err != nil {
+		return nil, fmt.Errorf("failed to create camera schema: %v", err)
 	}
 
 	return DbInstance, nil
