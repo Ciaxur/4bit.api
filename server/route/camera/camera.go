@@ -230,8 +230,6 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if ip := net.ParseIP(req.IP); ip == nil {
-		CameraPollerInstance.Mutex.Lock()
-
 		// No specific camera snap request.
 		// Obtain the image buffer.
 		for ip, entry := range CameraPollerInstance.CameraConnectionMp {
@@ -240,7 +238,6 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 				Data: entry.LastReadData,
 			}
 		}
-		CameraPollerInstance.Mutex.Unlock()
 	} else {
 		// Verify the ip exists.
 		if cam, ok := CameraPollerInstance.CameraConnectionMp[req.IP]; !ok {
@@ -253,12 +250,10 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 			)
 			return
 		} else {
-			CameraPollerInstance.Mutex.Lock()
 			resp.Cameras[req.IP] = interfaces.CameraResponseBase{
 				Name: cam.Name,
 				Data: cam.LastReadData,
 			}
-			CameraPollerInstance.Mutex.Unlock()
 		}
 	}
 
