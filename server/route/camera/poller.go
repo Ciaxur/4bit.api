@@ -3,7 +3,6 @@ package camera
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"sync"
@@ -32,6 +31,7 @@ type CameraPoller struct {
 	CameraConnectionMp map[string]*CameraTCPSocket
 	PollingInterval    time.Duration
 	KnownDelimiter     []byte
+	BufferSizeBytes    uint64
 
 	// Routine status.
 	IsRunning           bool
@@ -52,6 +52,7 @@ func CreateCameraPoller() (*CameraPoller, error) {
 	cameraPoller := CameraPoller{
 		PollingInterval:     100 * time.Millisecond,
 		KnownDelimiter:      []byte("\r\nDone\r\n"),
+		BufferSizeBytes:     5 * (1024 * 1024), // 5MB
 		IsRunning:           false,
 		ShouldUpdateEntries: false,
 		CameraConnectionMp:  map[string]*CameraTCPSocket{},
@@ -101,28 +102,26 @@ func startPollerGoRoutine(camPoller *CameraPoller) {
 					continue
 				}
 
+				// Signal to the camera data consumption readiness.
+				s.Write([]byte("I'm ready!"))
+
 				// Keep track of open connection.
 				camCon = &CameraTCPSocket{
 					TCPConnection: s,
 					Name:          cam.Name,
-					buffer:        bytes.NewBuffer(make([]byte, 8192)),
+					buffer:        bytes.NewBuffer([]byte{}),
 					LastUpdated:   time.Now(),
 				}
 				camPoller.CameraConnectionMp[cam.IP] = camCon
-
-				// Signal to the camera data consumption readiness.
-				s.Write([]byte("I'm ready!"))
-
 				log.Printf("Successfuly created a tcp socket for %s:%d\n", cam.IP, cam.Port)
 			}
 
 			// Consume camera data.
-			// dataBuffer, err := bufio.NewReader(camCon.TCPConnection)
-			dataBuffer := make([]byte, 4096)
-			n, err := io.ReadFull(camCon.TCPConnection, dataBuffer)
+			dataBuffer := make([]byte, camPoller.BufferSizeBytes)
+			bytesRead, err := camCon.TCPConnection.Read(dataBuffer)
 
-			if err != nil || n == 0 {
-				log.Printf("Read %d bytes. Failed to read data from camera '%s:%d': %v\n", n, cam.IP, cam.Port, err)
+			if err != nil || bytesRead == 0 {
+				log.Printf("Read %d bytes. Failed to read data from camera '%s:%d': %v\n", bytesRead, cam.IP, cam.Port, err)
 
 				// Clean up.
 				camCon.TCPConnection.Close()
@@ -131,23 +130,36 @@ func startPollerGoRoutine(camPoller *CameraPoller) {
 			}
 
 			// Buffer data based on a known delimiter.
-			camCon.buffer.Write(dataBuffer)
-			if bytes.Contains(camCon.buffer.Bytes(), camPoller.KnownDelimiter) {
-				// Obtain the data.
-				buffer := bytes.Split(camCon.buffer.Bytes(), camPoller.KnownDelimiter)
+			bytesWritten, err := camCon.buffer.Write(dataBuffer[:bytesRead])
+			if err != nil {
+				log.Printf("Warning: Read %dbytes from tcp socket but written %dbytes to buffer", bytesRead, bytesWritten)
+				log.Printf("Error: Failed to write data to buffer: %v", err)
 				camCon.buffer.Reset()
+				continue
+			}
 
-				// Fill in the buffer with the remaining data.
-				for _, b := range buffer[1:] {
-					camCon.buffer.Write(b)
-				}
+			delimiterIndexStart := bytes.Index(camCon.buffer.Bytes(), camPoller.KnownDelimiter)
+			if delimiterIndexStart != -1 {
+				// Extract the image up to the delimter.
+				image := camCon.buffer.Bytes()[:delimiterIndexStart]
+				subsequentImage := camCon.buffer.Bytes()[delimiterIndexStart+len(camPoller.KnownDelimiter):]
+
+				// Reset and buffer the next image.
+				camCon.buffer.Reset()
+				camCon.buffer.Write(subsequentImage)
+
+				camPoller.Mutex.Lock()
 
 				// Store camera data for other clients to consume.
-				// Strip off the '\rDone\n\r' from the string.
-				camCon.LastReadData = buffer[0]
+				camCon.LastReadData = image
 
 				// Store last updated for this connection & overall poller.
 				camPoller.LastUpdated = time.Now()
+
+				// This syncs up consuming produced images by the device on demand.
+				camCon.TCPConnection.Write([]byte("I'm ready!"))
+
+				camPoller.Mutex.Unlock()
 			}
 		}
 
