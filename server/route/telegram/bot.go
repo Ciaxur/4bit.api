@@ -76,14 +76,16 @@ func setupCommands() error {
 		"snap": {
 			MethodHandler: func(msg *tgbotapi.Message) tgbotapi.Chattable {
 				camPoller := camera.CameraPollerInstance
+				images := []interface{}{}
+
 				for _, entry := range camPoller.CameraConnectionMp {
-					photoFileBytes := tgbotapi.FileBytes{
+					image := tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
 						Name:  entry.Name,
 						Bytes: entry.LastReadData,
-					}
-					BOT.Send(tgbotapi.NewChatPhoto(msg.Chat.ID, photoFileBytes))
+					})
+					images = append(images, image)
 				}
-
+				BOT.Send(tgbotapi.NewMediaGroup(msg.Chat.ID, images))
 				return tgbotapi.NewMessage(
 					msg.Chat.ID,
 					"Done.",

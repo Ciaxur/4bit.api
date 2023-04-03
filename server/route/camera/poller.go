@@ -50,7 +50,7 @@ func CreateCameraPoller() (*CameraPoller, error) {
 
 	// Create the poller instance with default values.
 	cameraPoller := CameraPoller{
-		PollingInterval:     100 * time.Millisecond,
+		PollingInterval:     5 * time.Millisecond,
 		KnownDelimiter:      []byte("\r\nDone\r\n"),
 		BufferSizeBytes:     5 * (1024 * 1024), // 5MB
 		IsRunning:           false,
