@@ -5,12 +5,13 @@ import (
 	"log"
 	"strings"
 
+	"4bit.api/v0/server/route/camera"
 	"4bit.api/v0/server/route/parking"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type BotCommand struct {
-	MethodHandler func(*tgbotapi.Message) tgbotapi.MessageConfig
+	MethodHandler func(*tgbotapi.Message) tgbotapi.Chattable
 }
 
 var (
@@ -26,15 +27,16 @@ func setupCommands() error {
 
 	BotCommandMp = map[string]BotCommand{
 		"help": {
-			MethodHandler: func(msg *tgbotapi.Message) tgbotapi.MessageConfig {
+			MethodHandler: func(msg *tgbotapi.Message) tgbotapi.Chattable {
 				helpMessage := "Bot Commands are prefixed with '/'. Supported Commands:\n"
 				helpMessage += "/help - Prints help menu\n"
 				helpMessage += "/parking - Prints the last known altitude of vehicle"
+				helpMessage += "/snap - Takes snapshot of existing cameras"
 				return tgbotapi.NewMessage(msg.Chat.ID, helpMessage)
 			},
 		},
 		"parking": {
-			MethodHandler: func(msg *tgbotapi.Message) tgbotapi.MessageConfig {
+			MethodHandler: func(msg *tgbotapi.Message) tgbotapi.Chattable {
 				// TODO: Handle various NodeIDs.
 				nodeId := uint64(1)
 				barEntry, err := parking.GetLastKnownBarometerEntry(nodeId)
@@ -68,6 +70,23 @@ func setupCommands() error {
 						parkingFloor,
 						parkingFloorMessage,
 					),
+				)
+			},
+		},
+		"snap": {
+			MethodHandler: func(msg *tgbotapi.Message) tgbotapi.Chattable {
+				camPoller := camera.CameraPollerInstance
+				for _, entry := range camPoller.CameraConnectionMp {
+					photoFileBytes := tgbotapi.FileBytes{
+						Name:  entry.Name,
+						Bytes: entry.LastReadData,
+					}
+					BOT.Send(tgbotapi.NewChatPhoto(msg.Chat.ID, photoFileBytes))
+				}
+
+				return tgbotapi.NewMessage(
+					msg.Chat.ID,
+					"Done.",
 				)
 			},
 		},
