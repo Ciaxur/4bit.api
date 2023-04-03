@@ -30,7 +30,7 @@ func setupCommands() error {
 			MethodHandler: func(msg *tgbotapi.Message) tgbotapi.Chattable {
 				helpMessage := "Bot Commands are prefixed with '/'. Supported Commands:\n"
 				helpMessage += "/help - Prints help menu\n"
-				helpMessage += "/parking - Prints the last known altitude of vehicle"
+				helpMessage += "/parking - Prints the last known altitude of vehicle\n"
 				helpMessage += "/snap - Takes snapshot of existing cameras"
 				return tgbotapi.NewMessage(msg.Chat.ID, helpMessage)
 			},
