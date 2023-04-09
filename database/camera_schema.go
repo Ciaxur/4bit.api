@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-pg/pg/v10"
@@ -15,21 +16,31 @@ type CameraEntry struct {
 	IP         string
 	Port       uint16
 
-	// TODO: mTLS & inherit that from Node
+	// Adjustment Relationship
+	AdjustmentId uint64
+	Adjustment   *CameraAdjsustment `pg:"rel:has-one"`
+}
+
+type CameraAdjsustment struct {
+	BaseEntry
+
+	// Frame Crop
+	CropFrameHeight float64
+	CropFrameWidth  float64
 }
 
 func CreateCameraSchema(db *pg.DB) error {
 	models := []interface{}{
 		(*CameraEntry)(nil),
+		(*CameraAdjsustment)(nil),
 	}
 
+	// Attempt to create the table schemas
 	for _, model := range models {
-		err := db.Model(model).CreateTable(&orm.CreateTableOptions{
+		if err := db.Model(model).CreateTable(&orm.CreateTableOptions{
 			IfNotExists: true,
-		})
-
-		if err != nil {
-			return err
+		}); err != nil {
+			return fmt.Errorf("failed to create tables: %v", err)
 		}
 	}
 

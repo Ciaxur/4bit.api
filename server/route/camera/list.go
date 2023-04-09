@@ -43,7 +43,7 @@ func getCameraListHandler(w http.ResponseWriter, r *http.Request) {
 	// Query all cameras.
 	db := database.DbInstance
 	cameras := []database.CameraEntry{}
-	if err := db.Model(&cameras).Limit(int(req.Limit)).Select(); err != nil {
+	if err := db.Model(&cameras).Relation("Adjustment").Limit(int(req.Limit)).Select(); err != nil {
 		log.Printf("Failed to query cameras for camera list request: %v\n", err)
 		http.Error(
 			w,

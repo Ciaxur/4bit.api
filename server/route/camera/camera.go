@@ -91,12 +91,34 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create default camera adjustment.
+	log.Printf("Adding default camera adjustment for '%s:%d\n'", req.Camera.IP, req.Camera.Port)
+	camAdjust := database.CameraAdjsustment{
+		BaseEntry: database.BaseEntry{
+			Timestamp: time.Now(),
+		},
+		CropFrameHeight: 0.0,
+		CropFrameWidth:  0.0,
+	}
+	if _, err := db.Model(&camAdjust).Insert(); err != nil {
+		log.Printf("Failed to add new camera adjustment with ip '%s': %v\n", req.Camera.IP, err)
+
+		http.Error(
+			w,
+			fmt.Sprintf("Failed to add new camera adjustment entry with ip '%s'\n", req.Camera.IP),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
 	// Add new entry to database.
 	log.Printf("Adding new camera entry with ip '%s:%d'\n", req.Camera.IP, req.Camera.Port)
 	camEntry := req.Camera
 	camEntry.CreatedAt = time.Now()
 	camEntry.ModifiedAt = camEntry.CreatedAt
-	if _, err := db.Model(&camEntry).Insert(); err != nil {
+	camEntry.Adjustment = &camAdjust
+	camEntry.AdjustmentId = camAdjust.Id
+	if _, err := db.Model(&camEntry).Relation("Adjustment").Insert(); err != nil {
 		log.Printf("Failed to add new camera entry with ip '%s': %v\n", camEntry.IP, err)
 
 		http.Error(
@@ -172,6 +194,20 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db := database.DbInstance
+
+	// Grab the camera entry
+	if err := db.Model(&req.Camera).Where("camera_entry.ip = ?", req.Camera.IP).Relation("Adjustment").Select(); err != nil {
+		log.Printf("Failed to find camera entry with ip '%s': %v\n", req.Camera.IP, err)
+
+		http.Error(
+			w,
+			fmt.Sprintf("Failed to find camera entry with ip '%s'", req.Camera.IP),
+			http.StatusNotFound,
+		)
+		return
+	}
+
+	// Remove camera entry
 	if _, err := db.Model(&req.Camera).Where("camera_entry.ip = ?", req.Camera.IP).Delete(); err != nil {
 		log.Printf("Failed to remove camera entry with ip '%s': %v\n", req.Camera.IP, err)
 
@@ -181,6 +217,12 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest,
 		)
 		return
+	}
+
+	// Remove adjustment entry relation
+	log.Printf("Removing associated camera adjustment id='%d'\n", req.Camera.AdjustmentId)
+	if _, err := db.Model(req.Camera.Adjustment).WherePK().Delete(); err != nil {
+		log.Printf("Failed to remove camera adjustment id='%d' for camera entry with ip '%s': %v\n", req.Camera.AdjustmentId, req.Camera.IP, err)
 	}
 
 	log.Printf("Successfuly removed camera entry with ip '%s'\n", req.Camera.IP)

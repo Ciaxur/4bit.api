@@ -1,17 +1,10 @@
 package database
 
 import (
-	"time"
-
 	"4bit.api/v0/server/route/node/interfaces"
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 )
-
-type BaseEntry struct {
-	Id        uint64
-	Timestamp time.Time
-}
 
 type Node struct {
 	BaseEntry
