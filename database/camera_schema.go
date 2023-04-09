@@ -27,6 +27,8 @@ type CameraAdjsustment struct {
 	// Frame Crop
 	CropFrameHeight float64
 	CropFrameWidth  float64
+	CropFrameX      uint64
+	CropFrameY      uint64
 }
 
 func CreateCameraSchema(db *pg.DB) error {
