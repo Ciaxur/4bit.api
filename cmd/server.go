@@ -72,7 +72,6 @@ func NewServerCommand() *cobra.Command {
 	srvCmd.PersistentFlags().String("caCrt", "", "Path to the CA Certificate.")
 	srvCmd.MarkPersistentFlagRequired("caCrt")
 	srvCmd.PersistentFlags().String("caCrl", "", "Path to the CA Certificate Revocation List (CRL).")
-	srvCmd.MarkPersistentFlagRequired("caCrl")
 	srvCmd.PersistentFlags().String("name", "localhost", "Server's name'.")
 	srvCmd.PersistentFlags().String("host", "localhost", "Server hostname to serve on.")
 	srvCmd.PersistentFlags().Uint("port", 3000, "Server port to serve on.")

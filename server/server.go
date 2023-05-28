@@ -27,6 +27,63 @@ type ServerOpts struct {
 	PortEndpoint      uint16
 }
 
+func createPeerCertificateVerification(trustedCerts []x509.Certificate) func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+	// Create a cache to check revoked certs to save on compute.
+	revokedCerts := make(map[string]bool)
+
+	return func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+		// Obtain the parsed cached CRL instance.
+		crl := server_crl.CachedCaCrl
+
+		// Verify that the CRL content has not been tampered with, by checking
+		// its signature against the CA from the certificate pool.
+		// Iterating through each certificate to validate the CRL againts the
+		// appropriate cert.
+		var checked bool = false
+		var crlCheckErr error = nil
+		var cert *x509.Certificate
+		for _, trustedCert := range trustedCerts {
+			if err := trustedCert.CheckCRLSignature(crl); err != nil {
+				crlCheckErr = err
+				continue
+			}
+
+			// Successfuly verified and matched the CRL with a certificate.
+			checked = true
+			cert = &trustedCert
+			break
+		}
+		if !checked {
+			return fmt.Errorf("failed to match a certificate from the cert pool with the CRL: %v", crlCheckErr)
+		}
+		log.Printf("CRL verified peer[%s] with certificate issuer: %s\n", cert.Subject, cert.Issuer)
+
+		// Check if the peer's certificate is among the revoked ones registered
+		// within the CRL.
+		for _, rawPeerCert := range rawCerts {
+			peerCrt, err := x509.ParseCertificate(rawPeerCert)
+			if err != nil {
+				return fmt.Errorf("failed to parse peer's certificate: %v", err)
+			}
+
+			// Check the cached revoked certs.
+			if _, found := revokedCerts[peerCrt.SerialNumber.String()]; found {
+				return fmt.Errorf("peer certificate[%s] was revoked by %s", peerCrt.Subject, peerCrt.Issuer)
+			}
+
+			for _, revokedCert := range crl.TBSCertList.RevokedCertificates {
+				if revokedCert.SerialNumber.Cmp(peerCrt.SerialNumber) == 0 {
+					// Cache that sucker.
+					revokedCerts[peerCrt.SerialNumber.String()] = true
+					return fmt.Errorf("peer certificate[%s] was revoked by %s", peerCrt.Subject, peerCrt.Issuer)
+				}
+			}
+		}
+
+		return nil
+	}
+}
+
 func Run(opts *ServerOpts) error {
 	// TODO: Expand the CA pool to read from a given CA directory and append
 	// mutliple trusted CA's to the pool
@@ -59,8 +116,11 @@ func Run(opts *ServerOpts) error {
 		caCertPool.AddCert(&trustedCert)
 	}
 
-	// Create a cache to check revoked certs to save on compute.
-	revokedCerts := make(map[string]bool)
+	// Check for optional CRL check.
+	verifyPeerCertificateFunc := createPeerCertificateVerification(trustedCerts)
+	if opts.CACrl == "" {
+		verifyPeerCertificateFunc = nil
+	}
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", opts.HostEndpoint, opts.PortEndpoint),
@@ -75,57 +135,7 @@ func Run(opts *ServerOpts) error {
 
 			// Verify that the client certificate is valid. This function will check
 			// whether the cert. has been revoked by the CRL.
-			VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-				// Obtain the parsed cached CRL instance.
-				crl := server_crl.CachedCaCrl
-
-				// Verify that the CRL content has not been tampered with, by checking
-				// its signature against the CA from the certificate pool.
-				// Iterating through each certificate to validate the CRL againts the
-				// appropriate cert.
-				var checked bool = false
-				var crlCheckErr error = nil
-				var cert *x509.Certificate
-				for _, trustedCert := range trustedCerts {
-					if err := trustedCert.CheckCRLSignature(crl); err != nil {
-						crlCheckErr = err
-						continue
-					}
-
-					// Successfuly verified and matched the CRL with a certificate.
-					checked = true
-					cert = &trustedCert
-					break
-				}
-				if !checked {
-					return fmt.Errorf("failed to match a certificate from the cert pool with the CRL: %v", crlCheckErr)
-				}
-				log.Printf("CRL verified peer[%s] with certificate issuer: %s\n", cert.Subject, cert.Issuer)
-
-				// Check if the peer's certificate is among the revoked ones registered
-				// within the CRL.
-				for _, rawPeerCert := range rawCerts {
-					peerCrt, err := x509.ParseCertificate(rawPeerCert)
-					if err != nil {
-						return fmt.Errorf("failed to parse peer's certificate: %v", err)
-					}
-
-					// Check the cached revoked certs.
-					if _, found := revokedCerts[peerCrt.SerialNumber.String()]; found {
-						return fmt.Errorf("peer certificate[%s] was revoked by %s", peerCrt.Subject, peerCrt.Issuer)
-					}
-
-					for _, revokedCert := range crl.TBSCertList.RevokedCertificates {
-						if revokedCert.SerialNumber.Cmp(peerCrt.SerialNumber) == 0 {
-							// Cache that sucker.
-							revokedCerts[peerCrt.SerialNumber.String()] = true
-							return fmt.Errorf("peer certificate[%s] was revoked by %s", peerCrt.Subject, peerCrt.Issuer)
-						}
-					}
-				}
-
-				return nil
-			},
+			VerifyPeerCertificate: verifyPeerCertificateFunc,
 		},
 	}
 
