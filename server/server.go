@@ -140,9 +140,11 @@ func Run(opts *ServerOpts) error {
 	}
 
 	// Instantiate the CA's Certificate Revocation List (CRL).
-	log.Printf("Loading in CA's Certificate Revocation List.")
-	if err := server_crl.Init(opts.CACrl); err != nil {
-		return err
+	if opts.CACrl != "" {
+		log.Printf("Loading in CA's Certificate Revocation List.")
+		if err := server_crl.Init(opts.CACrl); err != nil {
+			return err
+		}
 	}
 
 	router := mux.NewRouter()
