@@ -43,13 +43,13 @@ func handleServerCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	opts := &server.ServerOpts{
-		ServerName:        cmd.PersistentFlags().Lookup("name").Value.String(),
-		ServerCertificate: cmd.PersistentFlags().Lookup("srvCrt").Value.String(),
-		ServerKey:         cmd.PersistentFlags().Lookup("srvKey").Value.String(),
-		CACertificate:     cmd.PersistentFlags().Lookup("caCrt").Value.String(),
-		CACrl:             cmd.PersistentFlags().Lookup("caCrl").Value.String(),
-		HostEndpoint:      cmd.PersistentFlags().Lookup("host").Value.String(),
-		PortEndpoint:      uint16(port),
+		ServerName:          cmd.PersistentFlags().Lookup("name").Value.String(),
+		ServerCertificate:   cmd.PersistentFlags().Lookup("srvCrt").Value.String(),
+		ServerKey:           cmd.PersistentFlags().Lookup("srvKey").Value.String(),
+		TrustedCASDirectory: cmd.PersistentFlags().Lookup("caCrtDir").Value.String(),
+		CACrl:               cmd.PersistentFlags().Lookup("caCrl").Value.String(),
+		HostEndpoint:        cmd.PersistentFlags().Lookup("host").Value.String(),
+		PortEndpoint:        uint16(port),
 	}
 	if err := server.Run(opts); err != nil {
 		return fmt.Errorf("failed server command: %v", err)
@@ -69,8 +69,8 @@ func NewServerCommand() *cobra.Command {
 	srvCmd.MarkPersistentFlagRequired("srvCrt")
 	srvCmd.PersistentFlags().String("srvKey", "", "Path to server's key.")
 	srvCmd.MarkPersistentFlagRequired("srvKey")
-	srvCmd.PersistentFlags().String("caCrt", "", "Path to the CA Certificate.")
-	srvCmd.MarkPersistentFlagRequired("caCrt")
+	srvCmd.PersistentFlags().String("caCrtDir", "", "Path to a directory with trusted CA Certificates.")
+	srvCmd.MarkPersistentFlagRequired("caCrtDir")
 	srvCmd.PersistentFlags().String("caCrl", "", "Path to the CA Certificate Revocation List (CRL).")
 	srvCmd.PersistentFlags().String("name", "localhost", "Server's name'.")
 	srvCmd.PersistentFlags().String("host", "localhost", "Server hostname to serve on.")

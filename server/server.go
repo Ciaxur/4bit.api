@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"4bit.api/v0/internal/server_crl"
@@ -18,13 +19,13 @@ import (
 )
 
 type ServerOpts struct {
-	ServerName        string
-	ServerCertificate string
-	ServerKey         string
-	CACertificate     string
-	CACrl             string
-	HostEndpoint      string
-	PortEndpoint      uint16
+	ServerName          string
+	ServerCertificate   string
+	ServerKey           string
+	TrustedCASDirectory string
+	CACrl               string
+	HostEndpoint        string
+	PortEndpoint        uint16
 }
 
 func createPeerCertificateVerification(trustedCerts []x509.Certificate) func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
@@ -85,12 +86,19 @@ func createPeerCertificateVerification(trustedCerts []x509.Certificate) func(raw
 }
 
 func Run(opts *ServerOpts) error {
-	// TODO: Expand the CA pool to read from a given CA directory and append
-	// mutliple trusted CA's to the pool
-	// Create the CA pool which will be used for verifying the client with.
-	caCrtContent, err := ioutil.ReadFile(opts.CACertificate)
+	// Create the CA pool, by iterating over a given directory, which will be used for verifying the client with.
+	trustedCasContent := [][]byte{}
+	trustedCaFiles, err := ioutil.ReadDir(opts.TrustedCASDirectory)
 	if err != nil {
-		return fmt.Errorf("failed to read the content of CA %s", opts.CACertificate)
+		return fmt.Errorf("failed to read trusted ca directory '%s': %v", opts.TrustedCASDirectory, err)
+	}
+	for _, caFile := range trustedCaFiles {
+		filepath := filepath.Join(opts.TrustedCASDirectory, caFile.Name())
+		caCrtContent, err := ioutil.ReadFile(filepath)
+		if err != nil {
+			return fmt.Errorf("failed to read the content of CA %s", filepath)
+		}
+		trustedCasContent = append(trustedCasContent, caCrtContent)
 	}
 
 	// Check if the server's certificate & key exists.
@@ -101,15 +109,17 @@ func Run(opts *ServerOpts) error {
 		return fmt.Errorf("server key '%s' does not exist", opts.ServerKey)
 	}
 
-	// Parse the certificate(s) from PEM bytes.
-	caCrt, err := utils.ParseCertificateFromPEMByptes(caCrtContent)
-	if err != nil {
-		return fmt.Errorf("failed to parse certifacte from PEM bytes: %v", err)
-	}
-
 	// Construct a list of parsed trusted CAs.
 	trustedCerts := []x509.Certificate{}
-	trustedCerts = append(trustedCerts, *caCrt)
+
+	// Parse the certificate(s) from PEM bytes.
+	for _, caCrtContent := range trustedCasContent {
+		caCrt, err := utils.ParseCertificateFromPEMByptes(caCrtContent)
+		if err != nil {
+			return fmt.Errorf("failed to parse certifacte from PEM bytes: %v", err)
+		}
+		trustedCerts = append(trustedCerts, *caCrt)
+	}
 
 	caCertPool := x509.NewCertPool()
 	for _, trustedCert := range trustedCerts {
