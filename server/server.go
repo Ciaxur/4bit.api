@@ -114,7 +114,7 @@ func Run(opts *ServerOpts) error {
 
 	// Parse the certificate(s) from PEM bytes.
 	for _, caCrtContent := range trustedCasContent {
-		caCrt, err := utils.ParseCertificateFromPEMByptes(caCrtContent)
+		caCrt, err := utils.ParseCertificateFromPEMBytes(caCrtContent)
 		if err != nil {
 			return fmt.Errorf("failed to parse certifacte from PEM bytes: %v", err)
 		}
