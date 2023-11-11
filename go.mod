@@ -3,6 +3,7 @@ module 4bit.api/v0
 go 1.17
 
 require (
+	github.com/go-pg/pg/v10 v10.11.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/joho/godotenv v1.4.0
@@ -10,7 +11,6 @@ require (
 )
 
 require (
-	github.com/go-pg/pg/v10 v10.11.0 // indirect
 	github.com/go-pg/zerochecker v0.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect

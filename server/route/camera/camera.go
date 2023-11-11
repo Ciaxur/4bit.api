@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"4bit.api/v0/database"
+	"4bit.api/v0/pkg/camera"
 	"4bit.api/v0/server/route/camera/interfaces"
 	"github.com/gorilla/mux"
 )
@@ -148,8 +149,8 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(resBody)
 
 	// Update poller state.
-	if CameraPollerInstance != nil {
-		CameraPollerInstance.ShouldUpdateEntries = true
+	if camera.CameraPollerInstance != nil {
+		camera.CameraPollerInstance.ShouldUpdateEntries = true
 	}
 }
 
@@ -232,8 +233,8 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 
 	// Update poller state.
-	if CameraPollerInstance != nil {
-		CameraPollerInstance.ShouldUpdateEntries = true
+	if camera.CameraPollerInstance != nil {
+		camera.CameraPollerInstance.ShouldUpdateEntries = true
 	}
 }
 
@@ -276,15 +277,15 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 	if ip := net.ParseIP(req.IP); ip == nil {
 		// No specific camera snap request.
 		// Obtain the image buffer.
-		for ip, entry := range CameraPollerInstance.CameraConnectionMp {
+		for ip, entry := range camera.CameraPollerInstance.PollWorkers {
 			resp.Cameras[ip] = interfaces.CameraResponseBase{
 				Name: entry.Name,
-				Data: entry.LastReadData,
+				Data: entry.GetLastImage(),
 			}
 		}
 	} else {
 		// Verify the ip exists.
-		if cam, ok := CameraPollerInstance.CameraConnectionMp[req.IP]; !ok {
+		if cam, ok := camera.CameraPollerInstance.PollWorkers[req.IP]; !ok {
 			log.Printf("Failed snap camera request for '%s'. Camera not found.\n", req.IP)
 
 			http.Error(
@@ -296,7 +297,7 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			resp.Cameras[req.IP] = interfaces.CameraResponseBase{
 				Name: cam.Name,
-				Data: cam.LastReadData,
+				Data: cam.GetLastImage(),
 			}
 		}
 	}
@@ -332,10 +333,10 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 		resp := interfaces.StreamCameraResponse{
 			Cameras: map[string]interfaces.CameraResponseBase{},
 		}
-		for ip, entry := range CameraPollerInstance.CameraConnectionMp {
+		for ip, entry := range camera.CameraPollerInstance.PollWorkers {
 			resp.Cameras[ip] = interfaces.CameraResponseBase{
 				Name: entry.Name,
-				Data: entry.LastReadData,
+				Data: entry.GetLastImage(),
 			}
 		}
 		resBody, err := json.Marshal(resp)
@@ -359,7 +360,7 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Listen for new data.
 	ticker := time.NewTicker(500 * time.Millisecond)
-	lastChecked := CameraPollerInstance.LastUpdated
+	lastChecked := camera.CameraPollerInstance.LastUpdated
 
 	for {
 		select {
@@ -369,8 +370,8 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 
 		case <-ticker.C:
 			// Check if any entires where updated.
-			if lastChecked != CameraPollerInstance.LastUpdated {
-				lastChecked = CameraPollerInstance.LastUpdated
+			if lastChecked != camera.CameraPollerInstance.LastUpdated {
+				lastChecked = camera.CameraPollerInstance.LastUpdated
 				sendState()
 			}
 		}

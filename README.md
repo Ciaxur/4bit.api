@@ -44,9 +44,12 @@ After the latter two are complete, run the following with respect certificate
 names chosen and the binary name built,
 ```sh
 build/SERVER_BIN_NAME \
-  --caCrt certs/4bitCA.crt \
+  server \
+  --caCrtDir certs/cas \
   --caCrl certs/4bitCA.crl \
   --srvCrt certs/localhost.crt \
   --srvKey certs/localhost.key \
+  --postgres_host localhost \
+  --postgres_port 5432 \
   --host 0.0.0.0
 ```

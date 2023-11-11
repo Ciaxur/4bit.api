@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"4bit.api/v0/server/route/camera"
+	"4bit.api/v0/pkg/camera"
 	"4bit.api/v0/server/route/parking"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -78,10 +78,10 @@ func setupCommands() error {
 				camPoller := camera.CameraPollerInstance
 				images := []interface{}{}
 
-				for _, entry := range camPoller.CameraConnectionMp {
+				for _, entry := range camPoller.PollWorkers {
 					image := tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
 						Name:  entry.Name,
-						Bytes: entry.LastReadData,
+						Bytes: entry.GetLastImage(),
 					})
 					images = append(images, image)
 				}

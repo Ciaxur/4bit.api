@@ -1,9 +1,13 @@
 package node
 
-import "github.com/gorilla/mux"
+import (
+	"context"
+
+	"github.com/gorilla/mux"
+)
 
 // Creates all routes for the Node endpoint.
-func CreateRoutes(r *mux.Router) {
+func CreateRoutes(ctx *context.Context, r *mux.Router) {
 	CreateNodeRoute(r)
 	CreateStateRoute(r)
 }

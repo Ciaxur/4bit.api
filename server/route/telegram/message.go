@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
@@ -67,7 +68,7 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func CreateRoute(r *mux.Router) {
+func CreateRoute(ctx *context.Context, r *mux.Router) {
 	r.HandleFunc("", rootHandler).Methods("GET")
 	r.HandleFunc("/message", messageHandler).Methods("POST")
 }

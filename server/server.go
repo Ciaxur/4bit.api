@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -85,7 +86,7 @@ func createPeerCertificateVerification(trustedCerts []x509.Certificate) func(raw
 	}
 }
 
-func Run(opts *ServerOpts) error {
+func Run(ctx *context.Context, opts *ServerOpts) error {
 	// Create the CA pool, by iterating over a given directory, which will be used for verifying the client with.
 	trustedCasContent := [][]byte{}
 	trustedCaFiles, err := ioutil.ReadDir(opts.TrustedCASDirectory)
@@ -163,7 +164,7 @@ func Run(opts *ServerOpts) error {
 	router.Use(middleware.BasicLogger)
 
 	// Add server root endpoints.
-	if err := route.InitRootRoute(router); err != nil {
+	if err := route.InitRootRoute(ctx, router); err != nil {
 		return fmt.Errorf("failed to create root server routes: %v", err)
 	}
 	http.Handle("/", router)
