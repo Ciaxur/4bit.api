@@ -77,18 +77,21 @@ func setupCommands() error {
 			MethodHandler: func(msg *tgbotapi.Message) tgbotapi.Chattable {
 				camPoller := camera.CameraPollerInstance
 				images := []interface{}{}
+				snapshotInfo := ""
 
 				for _, entry := range camPoller.PollWorkers {
+					snapshot := entry.GetSnapshot()
 					image := tgbotapi.NewInputMediaPhoto(tgbotapi.FileBytes{
 						Name:  entry.Name,
-						Bytes: entry.GetLastImage(),
+						Bytes: snapshot.ImageData,
 					})
 					images = append(images, image)
+					snapshotInfo += fmt.Sprintf("Node[%s]: %v\n", entry.Name, snapshot.LastUpdated)
 				}
 				BOT.Send(tgbotapi.NewMediaGroup(msg.Chat.ID, images))
 				return tgbotapi.NewMessage(
 					msg.Chat.ID,
-					"Done.",
+					snapshotInfo+"Done.",
 				)
 			},
 		},

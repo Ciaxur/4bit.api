@@ -278,9 +278,10 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 		// No specific camera snap request.
 		// Obtain the image buffer.
 		for ip, entry := range camera.CameraPollerInstance.PollWorkers {
+			snapshot := entry.GetSnapshot()
 			resp.Cameras[ip] = interfaces.CameraResponseBase{
 				Name: entry.Name,
-				Data: entry.GetLastImage(),
+				Data: snapshot.ImageData,
 			}
 		}
 	} else {
@@ -295,9 +296,10 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 			)
 			return
 		} else {
+			snapshot := cam.GetSnapshot()
 			resp.Cameras[req.IP] = interfaces.CameraResponseBase{
 				Name: cam.Name,
-				Data: cam.GetLastImage(),
+				Data: snapshot.ImageData,
 			}
 		}
 	}
@@ -334,9 +336,10 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 			Cameras: map[string]interfaces.CameraResponseBase{},
 		}
 		for ip, entry := range camera.CameraPollerInstance.PollWorkers {
+			snapshot := entry.GetSnapshot()
 			resp.Cameras[ip] = interfaces.CameraResponseBase{
 				Name: entry.Name,
-				Data: entry.GetLastImage(),
+				Data: snapshot.ImageData,
 			}
 		}
 		resBody, err := json.Marshal(resp)

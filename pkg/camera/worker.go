@@ -10,8 +10,14 @@ import (
 	"image/jpeg"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 )
+
+type CameraPollSnapshot struct {
+	ImageData   []byte
+	LastUpdated time.Time
+}
 
 type CameraPollWorker struct {
 	ctx          *context.Context
@@ -19,6 +25,7 @@ type CameraPollWorker struct {
 	endpoint     string
 	lastReadData []byte
 	lastUpdated  time.Time
+	mutex        *sync.Mutex
 
 	IsRunning bool
 	Name      string
@@ -41,15 +48,24 @@ func NewCameraPollWorker(ctx *context.Context, opts CameraPollWorkerOptions) *Ca
 		lastUpdated:  time.Now(),
 		IsRunning:    false,
 		Name:         opts.Name,
+		mutex:        &sync.Mutex{},
 	}
 }
 
-// GetLastImage returns a copy of the last image taken.
-func (worker *CameraPollWorker) GetLastImage() []byte {
+// GetSnapshot returns a copy of the last image taken.
+func (worker *CameraPollWorker) GetSnapshot() *CameraPollSnapshot {
+	// Grab a lock to deconflict with a race condition.
+	worker.mutex.Lock()
+	defer worker.mutex.Unlock()
+
 	// Copy the internal data and return it.
 	data := make([]byte, len(worker.lastReadData))
 	copy(data, worker.lastReadData)
-	return data
+
+	return &CameraPollSnapshot{
+		ImageData:   data,
+		LastUpdated: worker.lastUpdated,
+	}
 }
 
 // cleanup unregisters the worker.
@@ -120,8 +136,10 @@ pollLoop:
 			}
 
 			// Store the decoded image.
+			worker.mutex.Lock()
 			worker.lastReadData = buf.Bytes()
 			worker.lastUpdated = time.Now()
+			worker.mutex.Unlock()
 
 			// Deadline met, reset.
 			timer.Reset(deadlineDuration)
