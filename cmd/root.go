@@ -25,40 +25,43 @@ var (
 	rootCtx RootContext
 )
 
+// initRootContext instantiates a root context for which to be
+// used in sub-commands.
+// This returns an error instance reflecting the failure state.
+func initRootContext() error {
+	// Create a cancellation context.
+	log.Println("Instantiating root context")
+	ctx, cancel := context.WithCancel(context.Background())
+	rootCtx.Context = &ctx
+	rootCtx.Cancel = &cancel
+
+	// Register termination signal to clean up.
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT)
+
+	// Spin up clean up listener.
+	go func() {
+		for {
+			sig := <-sigChan
+			if sig == syscall.SIGINT {
+				log.Println("SIGINT: Cleaning up...")
+				cancel()
+
+				// Block for context completion.
+				<-ctx.Done()
+				<-time.NewTimer(1 * time.Second).C
+				os.Exit(0)
+			}
+		}
+	}()
+
+	return nil
+}
+
 func Execute() error {
 	rootCmd := &cobra.Command{
 		Use:   "4bit",
 		Short: "4bit is a REST api that monitors and reports on local network devices",
-
-		// Create a pre-hook to instantiate a root cancellation deadline.
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			// Create a cancellation context.
-			ctx, cancel := context.WithCancel(context.Background())
-			rootCtx.Context = &ctx
-			rootCtx.Cancel = &cancel
-
-			// Register termination signal to clean up.
-			sigChan := make(chan os.Signal, 1)
-			signal.Notify(sigChan, syscall.SIGINT)
-
-			// Spin up clean up listener.
-			go func() {
-				for {
-					sig := <-sigChan
-					if sig == syscall.SIGINT {
-						log.Println("SIGINT: Cleaning up...")
-						cancel()
-
-						// Block for context completion.
-						<-ctx.Done()
-						<-time.NewTimer(1 * time.Second).C
-						os.Exit(0)
-					}
-				}
-			}()
-
-			return nil
-		},
 
 		// Create a post-hook to nominally clean up.
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
@@ -69,6 +72,11 @@ func Execute() error {
 			<-time.NewTimer(1 * time.Second).C
 			return nil
 		},
+	}
+
+	// Instantiate a root cancellation deadline.
+	if err := initRootContext(); err != nil {
+		return err
 	}
 
 	// Global args.
