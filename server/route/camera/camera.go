@@ -3,7 +3,7 @@ package camera
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -20,7 +20,7 @@ import (
 // On success, responds with new database entry.
 func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Deserialize expected request.
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		log.Printf("Failed to read request body:%v\n", err)
@@ -159,7 +159,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 // On success, responds with emtpy message.
 func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Deserialize expected request.
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		log.Printf("Failed to read request body:%v\n", err)
@@ -244,7 +244,7 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 // On success, responds with SnapCameraResponse.
 func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Deserialize expected request.
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		log.Printf("Failed to read request body:%v\n", err)

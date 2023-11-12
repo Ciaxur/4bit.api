@@ -4,8 +4,8 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"sync"
 
 	"4bit.api/v0/utils/filewatcher"
@@ -54,7 +54,7 @@ func LoadCACrl(crl_filepath string) error {
 	clr_load_m.Lock()
 	defer clr_load_m.Unlock()
 
-	rawCrl, err := ioutil.ReadFile(crl_filepath)
+	rawCrl, err := os.ReadFile(crl_filepath)
 	if err != nil {
 		return fmt.Errorf("failed to read CA's CRL file from %s: %v", crl_filepath, err)
 	}

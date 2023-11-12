@@ -6,9 +6,10 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -39,7 +40,7 @@ func main() {
 
 	// Load the CA that authorized the server's certs.
 	log.Printf("CA Cert: %s\n", *caCrt)
-	caCrtContent, err := ioutil.ReadFile(*caCrt)
+	caCrtContent, err := os.ReadFile(*caCrt)
 	if err != nil {
 		log.Fatalf("Could not read the contents of CA cert %s\n", *caCrt)
 	}
@@ -77,6 +78,6 @@ func main() {
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	log.Printf("Response status from the server %d with content: %s\n", resp.StatusCode, body)
 }

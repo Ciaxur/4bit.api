@@ -5,9 +5,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -89,13 +89,13 @@ func createPeerCertificateVerification(trustedCerts []x509.Certificate) func(raw
 func Run(ctx *context.Context, opts *ServerOpts) error {
 	// Create the CA pool, by iterating over a given directory, which will be used for verifying the client with.
 	trustedCasContent := [][]byte{}
-	trustedCaFiles, err := ioutil.ReadDir(opts.TrustedCASDirectory)
+	trustedCaFiles, err := os.ReadDir(opts.TrustedCASDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to read trusted ca directory '%s': %v", opts.TrustedCASDirectory, err)
 	}
 	for _, caFile := range trustedCaFiles {
 		filepath := filepath.Join(opts.TrustedCASDirectory, caFile.Name())
-		caCrtContent, err := ioutil.ReadFile(filepath)
+		caCrtContent, err := os.ReadFile(filepath)
 		if err != nil {
 			return fmt.Errorf("failed to read the content of CA %s", filepath)
 		}
