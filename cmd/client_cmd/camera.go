@@ -101,8 +101,13 @@ func handleCameraCommand(cmd *cobra.Command, args []string) error {
 
 		// List the results of the snapshot response.
 		log.Printf("Received %d cameras", len(snapCams.Cameras))
-		for _, cam := range snapCams.Cameras {
-			log.Printf("== %s ==", cam.Name)
+		for camIp, cam := range snapCams.Cameras {
+			// Filter on camera ip, if one was supplied.
+			if *cameraIp != "" && *cameraIp != camIp {
+				continue
+			}
+
+			log.Printf("== %s[%s] ==", cam.Name, camIp)
 			log.Printf("- Data: %dB", len(cam.Data))
 
 			// Check whether to print the data to stdout or to a file.
