@@ -92,6 +92,12 @@ func handleCameraCommand(cmd *cobra.Command, args []string) error {
 			log.Printf("- Port: %d\n", cam.Port)
 			log.Printf("- ModifiedAt: %s\n", cam.ModifiedAt.Local())
 			log.Printf("- CreatedAt: %s\n", cam.CreatedAt.Local())
+			log.Printf("- Adjustment")
+			log.Printf("  - ModifiedAt: %s", cam.Adjustment.Timestamp.Local())
+			log.Printf("  - CropFrameHeight: %.2f", cam.Adjustment.CropFrameHeight)
+			log.Printf("  - CropFrameWidth: %.2f", cam.Adjustment.CropFrameWidth)
+			log.Printf("  - CropFrameX: %d", cam.Adjustment.CropFrameX)
+			log.Printf("  - CropFrameY: %d", cam.Adjustment.CropFrameY)
 		}
 	} else if *isSnapshot {
 		snapCams, err := snapCameras()
