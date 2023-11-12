@@ -19,7 +19,10 @@ var (
 	imageOutputFilepath *string
 	isSnapshot          *bool
 	isListCameras       *bool
-	cameraIp            *string
+
+	// Filtering
+	cameraIp    *string
+	resultLimit *uint64
 )
 
 // listCameras is a helper function which invokes listing available cameras
@@ -29,7 +32,7 @@ var (
 func listCameras() (*interfaces.ListCameraResponse, error) {
 	// Construct and serialize the request body.
 	listCamReq := interfaces.ListCamerasRequest{
-		Limit: 10,
+		Limit: *resultLimit,
 	}
 
 	// Ship that request!
@@ -162,6 +165,7 @@ func NewCameraCommand() *cobra.Command {
 	isSnapshot = camCmd.PersistentFlags().Bool("snapshot", false, "Takes a snapshot from existing cameras")
 	isListCameras = camCmd.PersistentFlags().BoolP("list", "l", false, "Lists available cameras")
 	cameraIp = camCmd.PersistentFlags().String("ip", "", "(Optional) IP Address of a camera")
+	resultLimit = camCmd.PersistentFlags().Uint64("limit", 10, "Pagination limit from HTTP GET requests")
 
 	return camCmd
 }
