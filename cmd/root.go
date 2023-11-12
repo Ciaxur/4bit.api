@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	clientcmd "4bit.api/v0/cmd/client_cmd"
 	"4bit.api/v0/internal/config"
 	cobra "github.com/spf13/cobra"
 )
@@ -77,5 +78,6 @@ func Execute() error {
 	config.Verbose = *verbose
 
 	rootCmd.AddCommand(NewServerCommand())
+	rootCmd.AddCommand(clientcmd.NewClientCommand())
 	return rootCmd.Execute()
 }
