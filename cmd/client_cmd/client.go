@@ -3,6 +3,7 @@
 package clientcmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -65,7 +66,7 @@ func setupClient(cmd *cobra.Command, args []string) error {
 
 // NewClientCommand creates a client sub-command, returning a pointer to
 // the command instance.
-func NewClientCommand() *cobra.Command {
+func NewClientCommand(ctx *context.Context) *cobra.Command {
 	clientCmd := &cobra.Command{
 		Use:   "client",
 		Short: "Client API interface with a running 4bit server instance",
@@ -78,6 +79,9 @@ func NewClientCommand() *cobra.Command {
 			return nil
 		},
 	}
+
+	// Set the root context.
+	rootContext = ctx
 
 	// Server API flags.
 	serverHost = clientCmd.PersistentFlags().String("server", "localhost", "Host endpoint for a running 4bit server")

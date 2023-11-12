@@ -25,6 +25,11 @@ var (
 	rootCtx RootContext
 )
 
+// GetRootContext simply returns the constructed root context instance.
+func GetRootContext() RootContext {
+	return rootCtx
+}
+
 // initRootContext instantiates a root context for which to be
 // used in sub-commands.
 // This returns an error instance reflecting the failure state.
@@ -86,6 +91,6 @@ func Execute() error {
 	config.Verbose = *verbose
 
 	rootCmd.AddCommand(NewServerCommand())
-	rootCmd.AddCommand(clientcmd.NewClientCommand())
+	rootCmd.AddCommand(clientcmd.NewClientCommand(rootCtx.Context))
 	return rootCmd.Execute()
 }

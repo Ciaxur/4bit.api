@@ -31,6 +31,21 @@ type ClientHttpTLSOptions struct {
 	TrustedCaPath         string
 }
 
+// createBaseHttpTransport is a helper function for creating a base HTTP Transport
+// template.
+func createBaseHttpTransport() *http.Transport {
+	return &http.Transport{
+		// Customize the maximum number of idle (keep-alive) connections to keep per host
+		MaxIdleConns: 10,
+
+		// Customize the Timeout for idle connections
+		IdleConnTimeout: 30 * time.Second,
+
+		// Customize the maximum number of idle (keep-alive) connections to keep globally
+		MaxIdleConnsPerHost: 5,
+	}
+}
+
 // createTlsTransport is a private helper function which wraps an HTTP transport
 // layer with TLS, give the credentials used.
 // This returns an HTTP Transport instance along with an error reflecting the failure
@@ -54,12 +69,13 @@ func createTlsTransport(clientCertPath string, clientKeyPath string, trustedCaCe
 	caCrtPool := x509.NewCertPool()
 	caCrtPool.AppendCertsFromPEM(caCrtContent)
 
+	// Create a base HTTP transport instance.
+	t := createBaseHttpTransport()
+
 	// Create the TLS for the client.
-	t := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			Certificates: []tls.Certificate{cert},
-			RootCAs:      caCrtPool,
-		},
+	t.TLSClientConfig = &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caCrtPool,
 	}
 
 	return t, nil
@@ -68,8 +84,10 @@ func createTlsTransport(clientCertPath string, clientKeyPath string, trustedCaCe
 // NewClientContext creates an insecure Client HTTP Context instance.
 // This returns an http client instance along with an error reflecting the failure state.
 func NewClientContext(opt ClientHttpOptions) (*ClientHttpContext, error) {
+	// Create base HTTP transport
+	t := createBaseHttpTransport()
 	client := http.Client{
-		Timeout: 5 * time.Second,
+		Transport: t,
 	}
 
 	return &ClientHttpContext{
@@ -95,13 +113,49 @@ func NewClientContextWithTLS(opt ClientHttpTLSOptions) (*ClientHttpContext, erro
 	// server.
 	client := &http.Client{
 		Transport: httpTransport,
-		Timeout:   5 * time.Second,
 	}
 
 	return &ClientHttpContext{
 		HttpClient:     client,
 		serverEndpoint: opt.ServerEndpoint,
 	}, nil
+}
+
+// NewStream opens a new stream with an endpoint.
+// It returns the response instance for which the caller is responsbile for consuming and cleaning
+// up, along with an error instance reflecting the failure state.
+func (ctx *ClientHttpContext) NewStream(apiEndpoint string, httpMethod string, reqInterface interface{}) (*http.Response, error) {
+	// Serialze the generic interface.
+	reqBodyBytes, err := json.Marshal(reqInterface)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize request body: %v", err)
+	}
+
+	// Construct variables used for invoking the request.
+	endpoint := fmt.Sprintf("https://%s/%s", ctx.serverEndpoint, apiEndpoint)
+	reqBodyBuf := bytes.NewBuffer(reqBodyBytes)
+	req, err := http.NewRequest(httpMethod, endpoint, reqBodyBuf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct http request context: %v", err)
+	}
+
+	// Set initial headers.
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Connection", "keep-alive")
+
+	log.Println("Establishing a stream with endpoint:", endpoint)
+	resp, err := ctx.HttpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to invoke GET request with server")
+	}
+
+	// Verify response code.
+	if resp.StatusCode != http.StatusOK {
+		ctx.HttpClient.CloseIdleConnections()
+		return resp, fmt.Errorf("http request resulted in a non-OK response code: %d", resp.StatusCode)
+	}
+
+	return resp, nil
 }
 
 // Invoke is a Client HTTP Context function which invokes the 4bit API endpoint,
