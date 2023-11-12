@@ -18,4 +18,4 @@ mkdir -p $BUILD_DIR
 echo "Tidy up modules and building the binary to build/$BIN_NAME."
 cd $PROJ_ROOT
 go mod tidy
-go build -o $BUILD_DIR/$BIN_NAME
+go build -ldflags="-s -w" -o $BUILD_DIR/$BIN_NAME
