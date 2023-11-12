@@ -90,6 +90,7 @@ func NewClientCommand() *cobra.Command {
 
 	// Add client sub-commands.
 	clientCmd.AddCommand(NewClientPingCommand())
+	clientCmd.AddCommand(NewCameraCommand())
 
 	return clientCmd
 }

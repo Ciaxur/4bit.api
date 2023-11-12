@@ -107,12 +107,10 @@ func NewClientContextWithTLS(opt ClientHttpTLSOptions) (*ClientHttpContext, erro
 // handling HTTP/HTTPS, URI construction, and arguments.
 // This returns the response body along with an error instance reflecting the
 // failure state.
-func (ctx *ClientHttpContext) Invoke(apiEndpoint string, httpMethod string) ([]byte, error) {
+func (ctx *ClientHttpContext) Invoke(apiEndpoint string, httpMethod string, requestBody []byte) ([]byte, error) {
 	endpoint := fmt.Sprintf("https://%s/%s", ctx.serverEndpoint, apiEndpoint)
-	// TODO: construct generic body.
-	body := bytes.NewBufferString("")
-
-	req, err := http.NewRequest(httpMethod, endpoint, body)
+	reqBody := bytes.NewBuffer(requestBody)
+	req, err := http.NewRequest(httpMethod, endpoint, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct http request context: %v", err)
 	}

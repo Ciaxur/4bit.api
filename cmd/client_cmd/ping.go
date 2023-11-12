@@ -14,7 +14,7 @@ import (
 // This returns an error instance reflecting the failure state.
 func handleClientPingCommand(cmd *cobra.Command, args []string) error {
 	// Use the existing HTTP client instance to invoke the ping endpoint.
-	resBody, err := clientContext.Invoke("ping", http.MethodGet)
+	resBody, err := clientContext.Invoke("ping", http.MethodGet, []byte(""))
 	if err != nil {
 		return fmt.Errorf("/ping failed: %v", err)
 	}
