@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -107,10 +108,17 @@ func NewClientContextWithTLS(opt ClientHttpTLSOptions) (*ClientHttpContext, erro
 // handling HTTP/HTTPS, URI construction, and arguments.
 // This returns the response body along with an error instance reflecting the
 // failure state.
-func (ctx *ClientHttpContext) Invoke(apiEndpoint string, httpMethod string, requestBody []byte) ([]byte, error) {
+func (ctx *ClientHttpContext) Invoke(apiEndpoint string, httpMethod string, reqInterface interface{}) ([]byte, error) {
+	// Serialze the generic interface.
+	reqBodyBytes, err := json.Marshal(reqInterface)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize request body: %v", err)
+	}
+
+	// Construct variables used for invoking the request.
 	endpoint := fmt.Sprintf("https://%s/%s", ctx.serverEndpoint, apiEndpoint)
-	reqBody := bytes.NewBuffer(requestBody)
-	req, err := http.NewRequest(httpMethod, endpoint, reqBody)
+	reqBodyBuf := bytes.NewBuffer(reqBodyBytes)
+	req, err := http.NewRequest(httpMethod, endpoint, reqBodyBuf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct http request context: %v", err)
 	}
