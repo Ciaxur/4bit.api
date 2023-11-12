@@ -32,7 +32,6 @@ type CameraPoller struct {
 	// Routine status.
 	IsRunning           bool
 	ShouldUpdateEntries bool
-	LastUpdated         time.Time
 }
 
 // Creates a new instance of camera poller.
@@ -53,7 +52,6 @@ func NewCameraPoller(ctx *context.Context) (*CameraPoller, error) {
 		IsRunning:           false,
 		ShouldUpdateEntries: false,
 		PollWorkers:         map[string]*CameraPollWorker{},
-		LastUpdated:         time.Now(),
 	}
 
 	if err := cameraPoller.UpdateStatus(); err != nil {

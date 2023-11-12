@@ -330,12 +330,44 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.WriteHeader(http.StatusOK)
 
+	// Consume request body.
+	reqBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("[/subscribe] Failed to read request body:%v\n", err)
+
+		http.Error(
+			w,
+			"failed to read request body",
+			http.StatusBadRequest,
+		)
+		return
+	}
+	r.Body.Close()
+
+	// Deserialize request body.
+	streamReq := &interfaces.StreamCameraRequest{}
+	if err := json.Unmarshal(reqBody, streamReq); err != nil {
+		log.Printf("[/subscribe] Failed to deserialize request body:%v\n", err)
+
+		http.Error(
+			w,
+			"failed to read request body",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
 	// Send initial camera states.
 	sendState := func() {
 		resp := interfaces.StreamCameraResponse{
 			Cameras: map[string]interfaces.CameraResponseBase{},
 		}
 		for ip, entry := range camera.CameraPollerInstance.PollWorkers {
+			// Filter on specific camera IP. Otherwise, stream all cameras.
+			if streamReq.IP != "" && ip != streamReq.IP {
+				continue
+			}
+
 			snapshot := entry.GetSnapshot()
 			resp.Cameras[ip] = interfaces.CameraResponseBase{
 				Name: entry.Name,
@@ -362,21 +394,16 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 	sendState()
 
 	// Listen for new data.
-	ticker := time.NewTicker(500 * time.Millisecond)
-	lastChecked := camera.CameraPollerInstance.LastUpdated
+	ticker := time.NewTicker(10 * time.Millisecond)
 
 	for {
 		select {
 		case <-r.Context().Done():
-			log.Printf("Client '%s' connection closed\n", r.RemoteAddr)
+			log.Printf("Client '%s' /subscribe connection closed\n", r.RemoteAddr)
 			return
 
 		case <-ticker.C:
-			// Check if any entires where updated.
-			if lastChecked != camera.CameraPollerInstance.LastUpdated {
-				lastChecked = camera.CameraPollerInstance.LastUpdated
-				sendState()
-			}
+			sendState()
 		}
 	}
 }
