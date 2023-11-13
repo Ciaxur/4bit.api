@@ -32,6 +32,10 @@ type SnapCameraResponse struct {
 	Cameras map[string]CameraResponseBase `json:"cameras"`
 }
 
+type StreamCameraRequest struct {
+	IP string `json:"ip"`
+}
+
 type StreamCameraResponse struct {
 	// Key value pair of each camera ip and it's corresponding buffer.
 	Cameras map[string]CameraResponseBase `json:"cameras"`

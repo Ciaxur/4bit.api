@@ -6,7 +6,9 @@ require (
 	github.com/go-pg/pg/v10 v10.11.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/gorilla/mux v1.8.0
+	github.com/gotk3/gotk3 v0.6.2
 	github.com/joho/godotenv v1.4.0
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/spf13/cobra v1.4.0
 )
 

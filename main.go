@@ -4,21 +4,15 @@ import (
 	"log"
 
 	"4bit.api/v0/cmd"
-	"4bit.api/v0/server/route/telegram"
-	dotenv "github.com/joho/godotenv"
+)
+
+var (
+	// Set via build flags: ie. go build -ldflags "-X 'cmd.version=1.2.3'"
+	version = "dev"
 )
 
 func main() {
-	if err := dotenv.Load(); err != nil {
-		log.Fatalf("failed to load .env file: %v", err)
-	}
-
-	// Initialize telegram bot.
-	if err := telegram.Init(); err != nil {
-		log.Fatalf("failed to instantiate the telegram bot: %v", err)
-	}
-
-	if err := cmd.Execute(); err != nil {
+	if err := cmd.Execute(version); err != nil {
 		log.Fatal(err)
 	}
 }

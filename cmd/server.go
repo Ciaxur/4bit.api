@@ -7,7 +7,9 @@ import (
 
 	"4bit.api/v0/database"
 	"4bit.api/v0/server"
+	"4bit.api/v0/server/route/telegram"
 	"github.com/go-pg/pg/v10"
+	dotenv "github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +23,16 @@ var (
 )
 
 func handleServerCmd(cmd *cobra.Command, args []string) error {
+	// Initialize .env.
+	if err := dotenv.Load(); err != nil {
+		log.Fatalf("failed to load .env file: %v", err)
+	}
+
+	// Initialize telegram bot.
+	if err := telegram.Init(); err != nil {
+		log.Fatalf("failed to instantiate the telegram bot: %v", err)
+	}
+
 	// Establish a connection with the postgres database.
 	if _, err := database.NewConnection(&pg.Options{
 		Addr:     fmt.Sprintf("%s:%d", *postgres_host, *postgres_port),

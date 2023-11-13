@@ -3,7 +3,7 @@ package camera
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -20,7 +20,7 @@ import (
 // On success, responds with new database entry.
 func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Deserialize expected request.
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		log.Printf("Failed to read request body:%v\n", err)
@@ -159,7 +159,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 // On success, responds with emtpy message.
 func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Deserialize expected request.
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		log.Printf("Failed to read request body:%v\n", err)
@@ -244,7 +244,7 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 // On success, responds with SnapCameraResponse.
 func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Deserialize expected request.
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
 		log.Printf("Failed to read request body:%v\n", err)
@@ -330,12 +330,44 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.WriteHeader(http.StatusOK)
 
+	// Consume request body.
+	reqBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("[/subscribe] Failed to read request body:%v\n", err)
+
+		http.Error(
+			w,
+			"failed to read request body",
+			http.StatusBadRequest,
+		)
+		return
+	}
+	r.Body.Close()
+
+	// Deserialize request body.
+	streamReq := &interfaces.StreamCameraRequest{}
+	if err := json.Unmarshal(reqBody, streamReq); err != nil {
+		log.Printf("[/subscribe] Failed to deserialize request body:%v\n", err)
+
+		http.Error(
+			w,
+			"failed to read request body",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
 	// Send initial camera states.
 	sendState := func() {
 		resp := interfaces.StreamCameraResponse{
 			Cameras: map[string]interfaces.CameraResponseBase{},
 		}
 		for ip, entry := range camera.CameraPollerInstance.PollWorkers {
+			// Filter on specific camera IP. Otherwise, stream all cameras.
+			if streamReq.IP != "" && ip != streamReq.IP {
+				continue
+			}
+
 			snapshot := entry.GetSnapshot()
 			resp.Cameras[ip] = interfaces.CameraResponseBase{
 				Name: entry.Name,
@@ -362,21 +394,16 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 	sendState()
 
 	// Listen for new data.
-	ticker := time.NewTicker(500 * time.Millisecond)
-	lastChecked := camera.CameraPollerInstance.LastUpdated
+	ticker := time.NewTicker(10 * time.Millisecond)
 
 	for {
 		select {
 		case <-r.Context().Done():
-			log.Printf("Client '%s' connection closed\n", r.RemoteAddr)
+			log.Printf("Client '%s' /subscribe connection closed\n", r.RemoteAddr)
 			return
 
 		case <-ticker.C:
-			// Check if any entires where updated.
-			if lastChecked != camera.CameraPollerInstance.LastUpdated {
-				lastChecked = camera.CameraPollerInstance.LastUpdated
-				sendState()
-			}
+			sendState()
 		}
 	}
 }
