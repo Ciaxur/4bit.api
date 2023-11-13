@@ -63,7 +63,14 @@ func initRootContext() error {
 	return nil
 }
 
-func Execute() error {
+// Execute initializes all of the commands, then runs the main cobra command
+// execution function.
+// The application version is passed into the execution from the main package.
+// This returns an error instance reflecting the failure state of any sub-command.
+func Execute(version string) error {
+	// Set the version.
+	binVersion = version
+
 	rootCmd := &cobra.Command{
 		Use:   "4bit",
 		Short: "4bit is a REST api that monitors and reports on local network devices",
@@ -92,5 +99,6 @@ func Execute() error {
 
 	rootCmd.AddCommand(NewServerCommand())
 	rootCmd.AddCommand(clientcmd.NewClientCommand(rootCtx.Context))
+	rootCmd.AddCommand(NewVersionCommand())
 	return rootCmd.Execute()
 }
