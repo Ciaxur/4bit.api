@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"time"
@@ -325,9 +326,16 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 // Response stream with StreamCameraResponse.
 func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Keep the TCP connection open, with a json event stream.
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+
+	// Create a multipart writer to split multiple responses with boundaries.
+	multipartWriter := multipart.NewWriter(w)
+	defer multipartWriter.Close()
+	w.Header().Set(
+		"Content-Type",
+		fmt.Sprintf("multipart/form-data; boundary=%s", multipartWriter.Boundary()),
+	)
 	w.WriteHeader(http.StatusOK)
 
 	// Consume request body.
@@ -358,7 +366,7 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send initial camera states.
-	sendState := func() {
+	sendState := func() error {
 		resp := interfaces.StreamCameraResponse{
 			Cameras: map[string]interfaces.CameraResponseBase{},
 		}
@@ -376,20 +384,37 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		resBody, err := json.Marshal(resp)
 		if err != nil {
-			log.Printf("Failed to serialize camera response: %v\n", err)
+			log.Printf("Failed to serialize camera response: %v", err)
 
 			http.Error(
 				w,
 				"failed to serialize response",
 				http.StatusInternalServerError,
 			)
-			return
+			return err
 		}
 
-		if _, err := w.Write(resBody); err != nil {
-			log.Printf("Failed to write serialized body to buffer: %v\n", err)
+		// Indicate that the partition is going to be of type json.
+		partWriter, err := multipartWriter.CreatePart(map[string][]string{
+			"Content-Type":   {"application/json"},
+			"Content-Length": {fmt.Sprintf("%d", len(resBody))},
+		})
+		if err != nil {
+			log.Printf("[/subscribe] Failed create multi-part writer:%v", err)
+			http.Error(
+				w,
+				"failed to create partition writer",
+				http.StatusInternalServerError,
+			)
+			return err
 		}
+
+		if _, err := partWriter.Write(resBody); err != nil {
+			log.Printf("Failed to write serialized body to buffer: %v", err)
+		}
+
 		w.(http.Flusher).Flush()
+		return nil
 	}
 	sendState()
 
@@ -399,11 +424,14 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case <-r.Context().Done():
-			log.Printf("Client '%s' /subscribe connection closed\n", r.RemoteAddr)
+			log.Printf("Client '%s' /subscribe connection closed", r.RemoteAddr)
 			return
 
 		case <-ticker.C:
-			sendState()
+			if err := sendState(); err != nil {
+				log.Printf("Client '%s' /subscribe connection closed due to error: %v", r.RemoteAddr, err)
+				return
+			}
 		}
 	}
 }
