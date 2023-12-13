@@ -24,7 +24,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		log.Printf("Failed to read request body:%v\n", err)
+		log.Printf("/camera/add: failed to read request body:%v\n", err)
 
 		http.Error(
 			w,
@@ -36,7 +36,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 
 	req := interfaces.AddCameraRequest{}
 	if err := json.Unmarshal(bodyBytes, &req); err != nil {
-		log.Printf("Failed to deserialize add camera request :%v\n", err)
+		log.Printf("/camera/add: failed to deserialize add camera request :%v\n", err)
 
 		http.Error(
 			w,
@@ -48,7 +48,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Validate required IP entry is valid.
 	if ip := net.ParseIP(req.Camera.IP); ip == nil {
-		log.Printf("Failed to create new camera entry. Invalid IP entry '%s'\n", req.Camera.IP)
+		log.Printf("/camera/add: failed to create new camera entry. Invalid IP entry '%s'\n", req.Camera.IP)
 
 		http.Error(
 			w,
@@ -59,7 +59,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Camera.Port == 0 {
-		log.Printf("Failed to create new camera entry. Invalid Port entry '%d'\n", req.Camera.Port)
+		log.Printf("/camera/add: failed to create new camera entry. Invalid Port entry '%d'\n", req.Camera.Port)
 
 		http.Error(
 			w,
@@ -70,7 +70,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Camera.Name == "" {
-		log.Printf("Failed to create new camera entry. Invalid empty name entry '%s'\n", req.Camera.Name)
+		log.Printf("/camera/add: failed to create new camera entry. Invalid empty name entry '%s'\n", req.Camera.Name)
 
 		http.Error(
 			w,
@@ -83,7 +83,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Find whether this entry already exists.
 	db := database.DbInstance
 	if err := db.Model(&req.Camera).Where("camera_entry.ip = ?", req.Camera.IP).Select(); err == nil {
-		log.Printf("Failed to add camera entry with IP '%s', because it already exists\n", req.Camera.IP)
+		log.Printf("/camera/add: failed to add camera entry with IP '%s', because it already exists\n", req.Camera.IP)
 
 		http.Error(
 			w,
@@ -94,7 +94,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create default camera adjustment.
-	log.Printf("Adding default camera adjustment for '%s:%d\n'", req.Camera.IP, req.Camera.Port)
+	log.Printf("/camera/add: adding default camera adjustment for '%s:%d\n'", req.Camera.IP, req.Camera.Port)
 	camAdjust := database.CameraAdjsustment{
 		BaseEntry: database.BaseEntry{
 			Timestamp: time.Now(),
@@ -105,7 +105,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 		CropFrameY:      0,
 	}
 	if _, err := db.Model(&camAdjust).Insert(); err != nil {
-		log.Printf("Failed to add new camera adjustment with ip '%s': %v\n", req.Camera.IP, err)
+		log.Printf("/camera/add: failed to add new camera adjustment with ip '%s': %v\n", req.Camera.IP, err)
 
 		http.Error(
 			w,
@@ -116,7 +116,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add new entry to database.
-	log.Printf("Adding new camera entry with ip '%s:%d'\n", req.Camera.IP, req.Camera.Port)
+	log.Printf("/camera/add: adding new camera entry with ip '%s:%d'\n", req.Camera.IP, req.Camera.Port)
 	camEntry := req.Camera
 	camEntry.CreatedAt = time.Now()
 	camEntry.ModifiedAt = camEntry.CreatedAt
@@ -136,7 +136,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Serialize response.
 	resBody, err := json.Marshal(camEntry)
 	if err != nil {
-		log.Printf("Failed to serialize new camera entry response: %v\n", err)
+		log.Printf("/camera/add: failed to serialize new camera entry response: %v\n", err)
 
 		http.Error(
 			w,
@@ -163,7 +163,7 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		log.Printf("Failed to read request body:%v\n", err)
+		log.Printf("/camera/remove: failed to read request body:%v\n", err)
 
 		http.Error(
 			w,
@@ -175,7 +175,7 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 
 	req := interfaces.RemoveCameraRequest{}
 	if err := json.Unmarshal(bodyBytes, &req); err != nil {
-		log.Printf("Failed to deserialize remove camera request :%v\n", err)
+		log.Printf("/camera/remove: failed to deserialize remove camera request :%v\n", err)
 
 		http.Error(
 			w,
@@ -187,7 +187,7 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Validate required IP entry is valid.
 	if ip := net.ParseIP(req.Camera.IP); ip == nil {
-		log.Printf("Failed to remove camera entry. Invalid IP entry '%s'\n", req.Camera.IP)
+		log.Printf("/camera/remove: failed to remove camera entry. Invalid IP entry '%s'\n", req.Camera.IP)
 
 		http.Error(
 			w,
@@ -201,7 +201,7 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Grab the camera entry
 	if err := db.Model(&req.Camera).Where("camera_entry.ip = ?", req.Camera.IP).Relation("Adjustment").Select(); err != nil {
-		log.Printf("Failed to find camera entry with ip '%s': %v\n", req.Camera.IP, err)
+		log.Printf("/camera/remove: failed to find camera entry with ip '%s': %v\n", req.Camera.IP, err)
 
 		http.Error(
 			w,
@@ -213,7 +213,7 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Remove camera entry
 	if _, err := db.Model(&req.Camera).Where("camera_entry.ip = ?", req.Camera.IP).Delete(); err != nil {
-		log.Printf("Failed to remove camera entry with ip '%s': %v\n", req.Camera.IP, err)
+		log.Printf("/camera/remove: failed to remove camera entry with ip '%s': %v\n", req.Camera.IP, err)
 
 		http.Error(
 			w,
@@ -224,12 +224,12 @@ func postRemoveCameraHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove adjustment entry relation
-	log.Printf("Removing associated camera adjustment id='%d'\n", req.Camera.AdjustmentId)
+	log.Printf("/camera/remove: Removing associated camera adjustment id='%d'\n", req.Camera.AdjustmentId)
 	if _, err := db.Model(req.Camera.Adjustment).WherePK().Delete(); err != nil {
 		log.Printf("Failed to remove camera adjustment id='%d' for camera entry with ip '%s': %v\n", req.Camera.AdjustmentId, req.Camera.IP, err)
 	}
 
-	log.Printf("Successfuly removed camera entry with ip '%s'\n", req.Camera.IP)
+	log.Printf("/camera/remove: Successfuly removed camera entry with ip '%s'\n", req.Camera.IP)
 	w.Header().Add("Content-Type", "application/json")
 	w.Write([]byte("{}"))
 
@@ -248,7 +248,7 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		log.Printf("Failed to read request body:%v\n", err)
+		log.Printf("/camera/snap: failed to read request body:%v\n", err)
 
 		http.Error(
 			w,
@@ -260,7 +260,7 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 
 	req := interfaces.SnapCameraRequest{}
 	if err := json.Unmarshal(bodyBytes, &req); err != nil {
-		log.Printf("Failed to deserialize add snap camera request :%v\n", err)
+		log.Printf("/camera/snap: failed to deserialize add snap camera request :%v\n", err)
 
 		http.Error(
 			w,
@@ -288,7 +288,7 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// Verify the ip exists.
 		if cam, ok := camera.CameraPollerInstance.PollWorkers[req.IP]; !ok {
-			log.Printf("Failed snap camera request for '%s'. Camera not found.\n", req.IP)
+			log.Printf("/camera/snap: failed snap camera request for '%s'. Camera not found.\n", req.IP)
 
 			http.Error(
 				w,
@@ -308,7 +308,7 @@ func getSnapCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Serialize response.
 	resBody, err := json.Marshal(resp)
 	if err != nil {
-		log.Printf("Failed to serialize snap camera response: %v\n", err)
+		log.Printf("/camera/snap: failed to serialize snap camera response: %v\n", err)
 
 		http.Error(
 			w,
@@ -341,7 +341,7 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Consume request body.
 	reqBody, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("[/subscribe] Failed to read request body:%v\n", err)
+		log.Printf("/camera/subscribe: failed to read request body:%v\n", err)
 
 		http.Error(
 			w,
@@ -355,7 +355,7 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 	// Deserialize request body.
 	streamReq := &interfaces.StreamCameraRequest{}
 	if err := json.Unmarshal(reqBody, streamReq); err != nil {
-		log.Printf("[/subscribe] Failed to deserialize request body:%v\n", err)
+		log.Printf("/camera/subscribe: failed to deserialize request body:%v\n", err)
 
 		http.Error(
 			w,
@@ -384,7 +384,7 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		resBody, err := json.Marshal(resp)
 		if err != nil {
-			log.Printf("Failed to serialize camera response: %v", err)
+			log.Printf("/camera/subscribe: failed to serialize camera response: %v", err)
 
 			http.Error(
 				w,
@@ -400,7 +400,7 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 			"Content-Length": {fmt.Sprintf("%d", len(resBody))},
 		})
 		if err != nil {
-			log.Printf("[/subscribe] Failed create multi-part writer:%v", err)
+			log.Printf("/camera/subscribe: failed create multi-part writer:%v", err)
 			http.Error(
 				w,
 				"failed to create partition writer",
@@ -410,7 +410,7 @@ func getSubscribeCameraHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if _, err := partWriter.Write(resBody); err != nil {
-			log.Printf("Failed to write serialized body to buffer: %v", err)
+			log.Printf("/camera/subscribe: failed to write serialized body to buffer: %v", err)
 		}
 
 		w.(http.Flusher).Flush()
