@@ -1,4 +1,4 @@
-package cmd
+package clientcmd
 
 import (
 	"context"
@@ -67,12 +67,9 @@ func initRootContext() error {
 // The application version is passed into the execution from the main package.
 // This returns an error instance reflecting the failure state of any sub-command.
 func Execute(version string) error {
-	// Set the version.
-	binVersion = version
-
 	rootCmd := &cobra.Command{
-		Use:   "4bit",
-		Short: "4bit is a REST api that monitors and reports on local network devices",
+		Use:   "client",
+		Short: "Client cli helps interface with a running 4bit server",
 
 		// Create a post-hook to nominally clean up.
 		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
@@ -96,7 +93,6 @@ func Execute(version string) error {
 	// Set global configuration.
 	config.Verbose = *verbose
 
-	rootCmd.AddCommand(NewServerCommand())
-	rootCmd.AddCommand(NewVersionCommand())
+	rootCmd.AddCommand(NewClientCommand(rootCtx.Context))
 	return rootCmd.Execute()
 }
