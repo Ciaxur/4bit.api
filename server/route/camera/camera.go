@@ -103,6 +103,7 @@ func postAddCameraHandler(w http.ResponseWriter, r *http.Request) {
 		CropFrameWidth:  0.0,
 		CropFrameX:      0,
 		CropFrameY:      0,
+		Rotate:          0.0,
 	}
 	if _, err := db.Model(&camAdjust).Insert(); err != nil {
 		log.Printf("/camera/add: failed to add new camera adjustment with ip '%s': %v\n", req.Camera.IP, err)
